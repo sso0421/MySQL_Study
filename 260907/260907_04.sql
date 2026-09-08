@@ -37,7 +37,7 @@ SET SQL_SAFE_UPDATES=1;
 
 # grade="2학년" AND age=15인 조건의 경우에 grade="1학년", age=14으로 바꿔라
 # 하지만 아래 문법도 실행이 안 됨
-# 조건절에 반드시 프라이머리 키가 들어가야 하기 때문!
+# WHERE 조건절에 반드시 프라이머리 키가 들어가야 하기 때문!
 UPDATE students SET grade="1학년", age=14
 WHERE grade="2학년" AND age=15;
 
