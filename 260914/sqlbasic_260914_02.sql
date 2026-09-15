@@ -169,9 +169,12 @@ WHERE length(description) > (
 
 # film 테이블에서 rating이 "PG-13"등급인 영화들이 있음
 # 전체 영화들은 각각 description(영화설명)이 존재
-/* 문제 :  전체 영화들의 개별적인 description의 문자열의 길이가 rating이 "PG-13"등급에 한한 
+
+/* 문제 : 전체 영화들의 개별적인 description의 문자열의 길이가 rating이 "PG-13"등급에 한한 
 영화들의 평균 description 길이보다 긴 영화들의 제목만 조회 및 출력 */
 # length() : 특정 컬럼 안에 입력되어있는 문자열의 길이를 조회.추출하는 함수
+
+USE sakila;
 
 SELECT title
 FROM film
@@ -181,8 +184,85 @@ WHERE rating = "PG-13";
 ### 정답 ###
 SELECT title 
 FROM film
-WHERE length(description) > (
-	SELECT AVG(length(description))
+WHERE LENGTH(description) > (
+	SELECT AVG(LENGTH(description))
 	FROM film
 	WHERE rating = "PG-13"
 );
+
+
+# 2005년 8월에 대여된 모든 "R"등급 영화의 제목과 
+# 해당 영화를 대여한 고객의 이메일을 조회
+# 날짜와 관려된 컬럼 -> 특정 년도 및 특정 월을 추출하고자 할 때, 사용하는 함수 -> YEAR(customer.rental_date) / MONTH(customer.rental_date)
+
+SHOW TABLES;
+# 필요한 테이블 : film, customer, rental, inventory
+
+# 렌탈이라는 대여 비즈니스 : 고객 대여 > 재고 > 영화
+SELECT * FROM film LIMIT 10; # film_id
+SELECT * FROM inventory LIMIT 10; # film_id, inventory_id
+SELECT * FROM rental LIMIT 10; # inventory_id, customer_id, rental_id
+SELECT * FROM customer LIMIT 10; # customer_id
+
+# JOIN 문법 활용
+SELECT F.title, C.email
+FROM film F
+JOIN inventory I ON I.film_id = F.film_id
+JOIN rental R ON R.inventory_id = I.inventory_id
+JOIN customer C ON C.customer_id = R.customer_id
+WHERE 
+	MONTH(R.rental_date) = 8 AND
+    YEAR(R.rental_date) = 2005 AND
+    F.rating = "R";
+    
+# USING 문법 활용
+SELECT F.title, C.email
+FROM film F
+JOIN inventory I USING(film_id)
+JOIN rental R USING(inventory_id)
+JOIN customer C USING(customer_id)
+WHERE 
+	MONTH(R.rental_date) = 8 AND
+    YEAR(R.rental_date) = 2005 AND
+    F.rating = "R";
+
+# 고객들의 렌탈 결제 정보 존재
+# 각 고객별 마지막 결제 시점, 해당 시점으로부터 30일 이전 기간동안 결제 내역을 찾아서
+# 해당 결제 내역들의 전체 결제 내역의 합계와 평균 결제 금액을 조회하자
+# 출력 시, 소수점 첫번째 자리까지 반올림해서 출력하기
+
+# 필요 테이블 : payment
+
+SELECT 
+	customer_id,
+    ROUND(SUM(amount), 1) custmer_sum,
+    ROUND(AVG(amount), 1) customer_avg
+FROM payment
+WHERE payment_date >= DATE_SUB(
+	(SELECT MAX(payment_date) FROM payment), INTERVAL 30 DAY
+)
+GROUP BY customer_id;
+
+
+# 영화는 모두 카테고리를 가지고 있습니다.
+# 영화 카테고리가 공상과학인 영화들에 출연한 배우의 이름을 찾아서 조회해보자.
+# 배우의 이름은 성, 이름을 하나로 연결해서 출력 (CONCAT)
+# 배우의 이름 출력 시, 대문자로 출력해라 (UPPER)
+
+# 필요 테이블 : category, actor
+SELECT * FROM actor;
+SELECT * FROM category;
+SELECT * FROM film_actor;
+SELECT * FROM film_category;
+
+SELECT UPPER(CONCAT(A.first_name, A.last_name)) fullname
+FROM actor A
+JOIN film_actor F USING(actor_id)
+JOIN film_category FC USING(film_id)
+JOIN category C USING(category_id)
+WHERE C.name = "Sci-Fi";
+
+
+
+# 집합,  UNION, UNION ALL, INTERSECT, EXCEPT
+# 트랜잭션, COMMIT, ROLLBACK
